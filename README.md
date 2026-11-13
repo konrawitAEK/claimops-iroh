@@ -8,6 +8,8 @@
 [![npm](https://img.shields.io/npm/v/iroh-fetch)](https://www.npmjs.com/package/iroh-fetch)
 [![ci](https://github.com/irohkit/iroh-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/irohkit/iroh-bridge/actions/workflows/ci.yml)
 
+**English** · [ภาษาไทย](README.th.md) · Thai beginner's guide: [BEGINNERS.md](BEGINNERS.md)
+
 Use backends that sit behind NAT as if they had a public URL. Your frontend (Next.js on Vercel, any static host, or
 Node.js) keeps calling `fetch("https://api.example.com/...")`, `new EventSource(...)` and `new WebSocket(...)`;
 the traffic goes over [iroh](https://www.iroh.computer/) to a small gateway next to your backend. There's no open
