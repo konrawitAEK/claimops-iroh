@@ -6,37 +6,59 @@ on:
   pull_request:
 
 jobs:
-  check:
+  backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v5
         with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get update && sudo apt-get install -y clang
-      - name: Build gateway
-        run: cargo build --locked -p iroh-gateway
-      - name: Install wasm-bindgen and binaryen
-        run: |
-          version=$(grep -A1 '^name = "wasm-bindgen"$' Cargo.lock | sed -n 's/version = "\(.*\)"/\1/p')
-          cargo install wasm-bindgen-cli --version "$version" --locked
-          curl -sL https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-linux.tar.gz | tar xz -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/binaryen-version_125/bin" >> "$GITHUB_PATH"
-      - name: Build web client
-        run: ./scripts/build-wasm.sh
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Unit tests
+        run: ./mvnw -B test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: Build native addon (linux-x64-gnu)
-        run: ./scripts/build-native.sh
-      - name: Test with WASM
-        working-directory: packages/iroh-fetch
-        run: npm test
-        env:
-          IROH_FETCH_BACKEND: wasm
-      - name: Test with the native addon
-        working-directory: packages/iroh-fetch
-        run: npm test
-        env:
-          IROH_FETCH_BACKEND: native
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Type check and production build
+        run: npm run build
+
+  # The whole stack in Docker, tested the way the browser uses it: over iroh, through the gateway.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Start the stack
+        run: |
+          docker compose up --build -d --wait
+          for i in $(seq 60); do curl -sf http://localhost:4200/iroh.json && break; sleep 2; done
+      - name: End-to-end tests over iroh
+        working-directory: e2e
+        run: |
+          npm ci
+          npm test
+      - name: Logs
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop
+        if: always()
+        run: docker compose down -v

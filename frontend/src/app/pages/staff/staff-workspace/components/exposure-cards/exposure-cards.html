@@ -1,0 +1,53 @@
+<div class="cards">
+  <mat-card appearance="outlined" class="usd">
+    <div class="card-pad">
+      <div class="spread">
+        <span class="market">USD</span>
+        <span class="caption">All markets</span>
+      </div>
+      <ng-container *ngTemplateOutlet="figures; context: { $implicit: usd() }" />
+    </div>
+  </mat-card>
+
+  @for (m of byMarket(); track m.code) {
+    <mat-card appearance="outlined">
+      <div class="card-pad">
+        <div class="spread">
+          <span class="market">{{ m.code }}</span>
+          <span class="caption">{{ m.name }}</span>
+        </div>
+        <ng-container *ngTemplateOutlet="figures; context: { $implicit: m.local }" />
+      </div>
+    </mat-card>
+  }
+</div>
+
+<!-- One currency: a row per group with activity (claim type, or market for USD), then the total. -->
+<ng-template #figures let-c>
+  <table class="data-table small">
+    <thead>
+      <tr>
+        <th>{{ c.currency }}</th>
+        <th class="right">Open</th>
+        <th class="right">Outstanding</th>
+        <th class="right">Settled</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of c.rows; track t.label) {
+        <tr>
+          <td class="caption">{{ t.label }}</td>
+          <td class="right">{{ t.openClaims }}</td>
+          <td class="right num">{{ money(t.outstanding, c.currency) }}</td>
+          <td class="right num">{{ money(t.settled, c.currency) }}</td>
+        </tr>
+      }
+      <tr class="total" [class.zero]="!c.openClaims && !c.outstanding && !c.settled">
+        <td>Total</td>
+        <td class="right">{{ c.openClaims }}</td>
+        <td class="right num">{{ money(c.outstanding, c.currency) }}</td>
+        <td class="right num settled">{{ money(c.settled, c.currency) }}</td>
+      </tr>
+    </tbody>
+  </table>
+</ng-template>

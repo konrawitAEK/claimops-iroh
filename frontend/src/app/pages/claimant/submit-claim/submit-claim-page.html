@@ -1,0 +1,89 @@
+<div class="stack-lg">
+  <h1 class="page-title">Report an incident</h1>
+
+  @if (submitted(); as claim) {
+    <app-alert severity="success">
+      Claim <strong>{{ claim.claimNumber }}</strong> submitted for
+      {{ money(claim.claimedAmount, claim.currency) }}. A claims officer will pick it up shortly.
+      <a alertAction mat-button [routerLink]="['/claim/track']" [queryParams]="{ number: claim.claimNumber }">Track it</a>
+    </app-alert>
+    <div><button mat-stroked-button type="button" (click)="newClaim()">Report another incident</button></div>
+  } @else {
+    @if (error(); as message) {
+      <app-alert severity="error">{{ message }}</app-alert>
+    }
+    <mat-card appearance="outlined">
+      <form class="card-pad stack" [formGroup]="form" (ngSubmit)="submit()">
+        <mat-button-toggle-group formControlName="claimType" aria-label="Claim type" hideSingleSelectionIndicator>
+          @for (t of claimTypes; track t.code) {
+            <mat-button-toggle [value]="t.code">{{ t.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+
+        <div class="grid">
+          <mat-form-field>
+            <mat-label>Policy number</mat-label>
+            <input matInput formControlName="policyNumber" readonly />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Incident date</mat-label>
+            <input matInput type="date" formControlName="incidentDate" [max]="today" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Market</mat-label>
+            <mat-select formControlName="market">
+              @for (m of markets; track m.code) {
+                <mat-option [value]="m.code">{{ m.name }} ({{ m.code }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <div class="amount">
+            <mat-form-field class="currency">
+              <mat-label>Currency</mat-label>
+              <mat-select formControlName="currency">
+                @for (c of currencies(); track c) {
+                  <mat-option [value]="c">{{ c }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field class="grow">
+              <mat-label>Claimed amount</mat-label>
+              <input matInput type="number" min="0.01" step="0.01" formControlName="claimedAmount" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <fieldset class="details" formGroupName="incidentDetails">
+          <legend>{{ claimType() === 'MOTOR' ? 'Vehicle' : 'Property' }} details</legend>
+          <div class="grid">
+            @for (field of detailFields[claimType()]; track field.key) {
+              <mat-form-field>
+                <mat-label>{{ field.label }}</mat-label>
+                @if (field.options) {
+                  <mat-select [formControlName]="field.key">
+                    @for (option of field.options; track option) {
+                      <mat-option [value]="option">{{ option }}</mat-option>
+                    }
+                  </mat-select>
+                } @else {
+                  <input matInput [formControlName]="field.key" autocomplete="off" />
+                }
+              </mat-form-field>
+            }
+          </div>
+        </fieldset>
+
+        <mat-form-field>
+          <mat-label>What happened?</mat-label>
+          <textarea matInput rows="4" formControlName="incidentDescription"></textarea>
+        </mat-form-field>
+
+        <div class="row">
+          <button mat-flat-button type="submit" [disabled]="submitting()">
+            {{ submitting() ? 'Submitting…' : 'Submit claim' }}
+          </button>
+        </div>
+      </form>
+    </mat-card>
+  }
+</div>

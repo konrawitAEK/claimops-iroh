@@ -1,0 +1,100 @@
+<header class="head">
+  @if (claim(); as c) {
+    <div>
+      <h2 class="title">{{ c.claimNumber }}</h2>
+      <div class="caption">{{ c.claimType }} · {{ c.market }} · {{ c.claimantName }}</div>
+    </div>
+    <app-status-chip [status]="c.status" />
+  } @else {
+    <h2 class="title">Claim</h2>
+  }
+  <button mat-icon-button mat-dialog-close aria-label="Close"><mat-icon>close</mat-icon></button>
+</header>
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="body">
+  @if (error(); as message) {
+    <app-alert severity="error">{{ message }}</app-alert>
+  }
+
+  @if (claim(); as c) {
+    <section>
+      <h3>Claim</h3>
+      <dl>
+        <dt>Policy</dt>
+        <dd>{{ c.policyNumber }}</dd>
+        <dt>Incident date</dt>
+        <dd>{{ c.incidentDate }}</dd>
+        <dt>Claimed</dt>
+        <dd class="num">{{ money(c.claimedAmount, c.currency) }}</dd>
+        @if (c.settledAmount !== null) {
+          <dt>Settled</dt>
+          <dd class="num">{{ money(c.settledAmount, c.currency) }}</dd>
+        }
+        <dt>Officer</dt>
+        <dd>{{ c.assignedHandler ?? 'Unassigned' }}</dd>
+        <dt>Submitted</dt>
+        <dd>{{ when(c.submittedAt) }}</dd>
+        <dt>Last update</dt>
+        <dd>{{ when(c.updatedAt) }}</dd>
+        @if (c.decidedAt) {
+          <dt>Decided</dt>
+          <dd>{{ when(c.decidedAt) }}</dd>
+        }
+      </dl>
+    </section>
+
+    <section>
+      <h3>Incident</h3>
+      <dl>
+        @for (d of c.incidentDetails | keyvalue; track d.key) {
+          <dt>{{ labelFor(d.key) }}</dt>
+          <dd>{{ d.value }}</dd>
+        }
+      </dl>
+      <p class="text">{{ c.incidentDescription }}</p>
+    </section>
+
+    @if (c.infoRequests.length) {
+      <section>
+        <h3>Information requests</h3>
+        @for (r of c.infoRequests; track r.id) {
+          <div class="thread">
+            <div class="caption">{{ r.requestedBy }} asked · {{ when(r.requestedAt) }}</div>
+            <div class="text">{{ r.question }}</div>
+            @if (r.answeredAt) {
+              <div class="caption reply">{{ c.claimantName }} replied · {{ when(r.answeredAt) }}</div>
+              <div class="text">{{ r.answer }}</div>
+            } @else {
+              <div class="caption reply">Waiting for the claimant</div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    @if (c.decisionNote) {
+      <section>
+        <h3>{{ c.status === 'REJECTED' ? 'Rejection reason' : 'Decision note' }}</h3>
+        <p class="text">{{ c.decisionNote }}</p>
+      </section>
+    }
+
+    <section>
+      <h3>Audit trail</h3>
+      <ol class="audit">
+        @for (e of audit(); track e.eventId) {
+          <li>
+            <span class="caption">{{ when(e.occurredAt) }}</span>
+            <span>{{ describe(e) }}</span>
+            <span class="caption">by {{ e.actor }}</span>
+          </li>
+        } @empty {
+          <li class="caption">No events recorded yet.</li>
+        }
+      </ol>
+    </section>
+  }
+</div>

@@ -1,0 +1,144 @@
+<div class="stack-lg">
+  <div class="spread">
+    <h1 class="page-title">Claims workspace</h1>
+    <button mat-stroked-button type="button" (click)="reload()">Refresh</button>
+  </div>
+
+  @if (notice(); as n) {
+    <app-alert [severity]="n.severity">
+      {{ n.text }}
+      <button alertAction mat-button type="button" (click)="notice.set(null)">Dismiss</button>
+    </app-alert>
+  }
+
+  <section class="stack">
+    <h2 class="section-title">Liability exposure: outstanding and settled</h2>
+    <app-exposure-cards [exposures]="dashboard()?.exposures ?? []" />
+  </section>
+
+  @if (dashboard(); as d) {
+    <section class="stack">
+      <h2 class="section-title">Team workload and performance</h2>
+      <div class="workload">
+        @for (s of statuses; track s) {
+          <div class="tile">
+            <app-status-chip [status]="s" />
+            <span class="count num">{{ d.workload.byStatus[s] }}</span>
+          </div>
+        }
+      </div>
+      @if (d.workload.performance.length) {
+        <mat-card appearance="outlined">
+          <div class="table-wrap">
+            <table class="data-table small">
+              <thead>
+                <tr>
+                  <th>Officer</th>
+                  <th class="right">Open</th>
+                  <th class="right">Settled</th>
+                  <th class="right">Rejected</th>
+                  <th class="right">Avg. time to decision</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of d.workload.performance; track p.handler) {
+                  <tr [class.me]="p.handler === session.identity().name">
+                    <td>{{ p.handler }}</td>
+                    <td class="right">{{ p.openClaims }}</td>
+                    <td class="right">{{ p.settled }}</td>
+                    <td class="right">{{ p.rejected }}</td>
+                    <td class="right">{{ duration(p.avgHoursToDecision) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card>
+      }
+    </section>
+  }
+
+  <section class="stack">
+    <h2 class="section-title">Claims queue</h2>
+    <div class="row filters">
+      <mat-form-field class="dense">
+        <mat-label>Market</mat-label>
+        <mat-select [(ngModel)]="marketFilter" (selectionChange)="reload()">
+          <mat-option [value]="null">All markets</mat-option>
+          @for (m of markets; track m.code) {
+            <mat-option [value]="m.code">{{ m.code }} · {{ m.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="dense">
+        <mat-label>Status</mat-label>
+        <mat-select [(ngModel)]="statusFilter" (selectionChange)="reload()">
+          <mat-option [value]="null">All statuses</mat-option>
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ statusLabels[s] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-slide-toggle [(ngModel)]="mineOnly" (change)="reload()">Only mine</mat-slide-toggle>
+    </div>
+
+    <mat-card appearance="outlined">
+      @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+      <div class="table-wrap">
+        <table class="data-table small">
+          <thead>
+            <tr>
+              <th>Claim</th>
+              <th>Claimant</th>
+              <th>Type</th>
+              <th class="right">Claimed</th>
+              <th>Status</th>
+              <th>Officer</th>
+              <th>Submitted</th>
+              <th class="right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of queue(); track c.id) {
+              <tr class="clickable" [class.dim]="busyId() === c.id" (click)="view(c)">
+                <td class="nowrap">{{ c.claimNumber }}</td>
+                <td>{{ c.claimantName }}</td>
+                <td>{{ c.claimType }} · {{ c.market }}</td>
+                <td class="right num nowrap">{{ money(c.claimedAmount, c.currency) }}</td>
+                <td><app-status-chip [status]="c.status" /></td>
+                <td>{{ c.assignedHandler ?? '—' }}</td>
+                <td class="nowrap">{{ when(c.submittedAt) }}</td>
+                <td class="right actions" (click)="$event.stopPropagation()">
+                  <button mat-button type="button" (click)="view(c)">View</button>
+                  @if (c.status === 'SUBMITTED') {
+                    <button mat-flat-button type="button" [disabled]="busyId() !== null" (click)="pickUp(c)">
+                      Pick up
+                    </button>
+                  } @else if (c.status === 'IN_REVIEW' && isMine(c)) {
+                    <button mat-stroked-button type="button" [disabled]="busyId() !== null" (click)="decide(c, 'info')">
+                      Request info
+                    </button>
+                    <button mat-flat-button type="button" [disabled]="busyId() !== null" (click)="decide(c, 'settle')">
+                      Settle
+                    </button>
+                    <button mat-button type="button" class="danger" [disabled]="busyId() !== null" (click)="decide(c, 'reject')">
+                      Reject
+                    </button>
+                  } @else if (c.status === 'INFO_REQUESTED') {
+                    <span class="caption">Waiting for claimant</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td class="empty" colspan="8">No claims match these filters.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mat-card>
+  </section>
+</div>

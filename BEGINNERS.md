@@ -3,7 +3,7 @@
 คู่มือนี้เขียนให้คนที่ไม่เคยได้ยินคำว่า NAT, relay หรือ iroh มาก่อน อ่านจบแล้วจะเข้าใจว่า iroh-bridge แก้ปัญหาอะไร
 ทำงานอย่างไร และได้ลองเชื่อมต่อจริงหนึ่งครั้งบนเครื่องของตัวเอง ใช้เวลาประมาณ 20–30 นาที
 
-ถ้ารู้พื้นฐานพวกนี้อยู่แล้ว ข้ามไปอ่าน [README](README.th.md) ได้เลย
+ถ้ารู้พื้นฐานพวกนี้อยู่แล้ว ข้ามไปอ่าน [คู่มืออ้างอิง iroh-bridge](docs/iroh-bridge.th.md) ได้เลย
 
 ## สารบัญ
 
@@ -206,19 +206,23 @@ body: สวัสดีจากเครื่องที่บ้าน
 หลังจากนั้นโค้ดเดิมที่ใช้ `fetch`, axios, SWR, React Query, `WebSocket` หรือ `EventSource` กับ `https://api.example.com`
 จะทำงานผ่าน iroh โดยอัตโนมัติ
 
-ถ้าใช้ React หรือ Next.js มี `<IrohProvider>` ให้ใช้ ดูหัวข้อ [React / Next.js ใน README](README.th.md#react--nextjs)
-และตัวอย่างโปรเจกต์ที่ใช้งานได้จริงใน [examples/nextjs](examples/nextjs)
+ถ้าใช้ React หรือ Next.js มี `<IrohProvider>` ให้ใช้ ดูหัวข้อ [React / Next.js ในคู่มืออ้างอิง](docs/iroh-bridge.th.md#react--nextjs)
+
+ถ้าอยากดูแอปจริงทั้งระบบ ดู [ClaimOps](README.th.md) ซึ่งเป็นแอประบบเคลมที่ใช้ Angular คู่กับ Spring Boot
+สั่ง `docker compose up --build` คำสั่งเดียว แล้วเปิด <http://localhost:4200> ได้เลย backend ในตัวอย่างนี้ไม่เปิดพอร์ต
+เบราว์เซอร์คุยกับมันผ่าน iroh อย่างเดียว ฝั่ง Angular เพิ่มแค่ไฟล์เดียวคือ
+[`iroh.ts`](frontend/src/app/core/iroh.ts)
 
 ### รูปภาพ วิดีโอ และไฟล์ดาวน์โหลด
 
 `fetch` ผ่าน iroh ได้ทันที แต่แท็ก `<img src="https://api.example.com/photo.jpg">` เบราว์เซอร์จะโหลดเองโดยไม่ผ่าน `fetch`
 ถ้าต้องการให้รูปและวิดีโอจาก backend แสดงได้ด้วย ต้องเปิดใช้ service worker ดู
-[รูปภาพ วิดีโอ และการดาวน์โหลด ใน README](README.th.md#images-video-and-downloads-service-worker)
+[รูปภาพ วิดีโอ และการดาวน์โหลด ในคู่มืออ้างอิง](docs/iroh-bridge.th.md#images-video-and-downloads-service-worker)
 
 ### ทดสอบด้วย curl หรือ Postman
 
 แพ็กเกจ iroh-fetch มีคำสั่ง `iroh-proxy` ที่เปิด gateway ให้เป็น `http://127.0.0.1:พอร์ต` บนเครื่องเรา
-จึงใช้ curl, Postman หรือโปรแกรม HTTP อะไรก็ได้ทดสอบ backend ดู [iroh-proxy ใน README](README.th.md#local-port-iroh-proxy)
+จึงใช้ curl, Postman หรือโปรแกรม HTTP อะไรก็ได้ทดสอบ backend ดู [iroh-proxy ในคู่มืออ้างอิง](docs/iroh-bridge.th.md#local-port-iroh-proxy)
 
 ### มีหลาย backend
 
@@ -240,7 +244,7 @@ backends: {
   curl -fsSL https://raw.githubusercontent.com/irohkit/iroh-bridge/main/scripts/install-gateway.sh | sudo sh -s -- --systemd http://127.0.0.1:8080
   ```
   ดู endpoint id ได้ด้วย `journalctl -u iroh-gateway | grep IROH_ENDPOINT_ID`
-- **Docker**: ดูวิธีใน [Quick start ของ README](README.th.md#quick-start) และ [deploy/docker](deploy/docker)
+- **Docker**: ดูวิธีใน [Quick start ในคู่มืออ้างอิง](docs/iroh-bridge.th.md#quick-start) และ [deploy/docker ของ iroh-bridge](https://github.com/irohkit/iroh-bridge/tree/main/deploy/docker)
 
 **สำคัญ:** ต้องเก็บ key file ไว้ให้ดี ถ้าไฟล์หาย gateway จะสร้างกุญแจใหม่ endpoint id ก็จะเปลี่ยน แล้วหน้าเว็บทุกตัวที่ใช้ id เดิมจะต่อไม่ได้
 
@@ -252,7 +256,7 @@ backends: {
   JWT หรือ session ซึ่งใช้ผ่าน iroh-bridge ได้ตามปกติ
 - **key file คือความลับ** ใครได้ไฟล์ `iroh-gateway.key` ไปจะปลอมตัวเป็น backend ของเราได้ ห้าม commit ขึ้น Git ห้ามแชร์
 - gateway ช่วยจำกัดสิทธิ์เพิ่มได้ เช่น เปิดให้เรียกเฉพาะบาง path (`IROH_ALLOW_PATHS=/api`) หรือจำกัดจำนวนคำขอต่อวินาที
-  ดู [การควบคุมการเข้าถึง ใน README](README.th.md#access-control)
+  ดู [การควบคุมการเข้าถึง ในคู่มืออ้างอิง](docs/iroh-bridge.th.md#access-control)
 - backend จะได้ header `X-Iroh-Remote-Id` ซึ่งเป็น id ของผู้เรียกที่ยืนยันแล้วด้วยการเข้ารหัส ปลอมไม่ได้
   เอาไปใช้บันทึก log หรือจำกัดการใช้งานได้
 
@@ -301,7 +305,6 @@ gateway ต่อถึงแล้ว แต่ส่งต่อให้ back
 
 ## 11. อ่านต่อ
 
-- [README](README.th.md): ตัวเลือกทั้งหมดของ iroh-fetch และ iroh-gateway, การทำ high availability, การ route หลาย service
+- [คู่มืออ้างอิง iroh-bridge](docs/iroh-bridge.th.md): ตัวเลือกทั้งหมดของ iroh-fetch และ iroh-gateway, การทำ high availability, การ route หลาย service
 - [deploy/relay/README.md](deploy/relay/README.md): ตั้ง relay ของตัวเอง
-- [examples/nextjs](examples/nextjs): ตัวอย่างเว็บ Next.js ที่ใช้งานจริง
-- [เดโมออนไลน์](https://iroh-bridge.vercel.app): กดปุ่ม **Run self-test** เพื่อดูการทำงานกับ backend จริงสองตัวที่อยู่หลัง NAT
+- [ClaimOps](README.th.md): แอปตัวอย่างเต็มระบบ (Angular + Spring Boot) ที่ backend เข้าถึงได้ผ่าน iroh เท่านั้น

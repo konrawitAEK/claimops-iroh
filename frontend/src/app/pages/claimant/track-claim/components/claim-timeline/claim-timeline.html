@@ -1,0 +1,13 @@
+<ol class="timeline">
+  @for (entry of entries(); track $index) {
+    <li [class]="'t-' + entry.tone">
+      <div class="title">{{ entry.title }}</div>
+      @if (entry.at) {
+        <div class="caption">{{ when(entry.at) }}</div>
+      }
+      @if (entry.text) {
+        <div class="body2 text">{{ entry.text }}</div>
+      }
+    </li>
+  }
+</ol>

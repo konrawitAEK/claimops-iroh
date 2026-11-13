@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: claimops
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/claimops}
+    username: ${DB_USER:claimops}
+    password: ${DB_PASSWORD:claimops}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that the entities match it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: claimops-exposure-projector
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.value.default.type: com.chubb.claimops.claim.event.ClaimEvent
+        spring.json.trusted.packages: com.chubb.claimops.claim.event
+        spring.json.use.type.headers: false
+    listener:
+      ack-mode: record
+
+claimops:
+  kafka:
+    topic: chubb.claims.events
+    partitions: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

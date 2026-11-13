@@ -1,0 +1,23 @@
+.search {
+  width: 320px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 24px;
+  margin: 0;
+}
+dt {
+  color: var(--co-muted);
+}
+dd {
+  margin: 0;
+}
+.reply {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container);
+}
+.small {
+  font: var(--mat-sys-title-medium);
+}

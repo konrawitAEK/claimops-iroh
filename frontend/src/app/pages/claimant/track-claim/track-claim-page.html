@@ -1,0 +1,72 @@
+<div class="stack-lg">
+  <h1 class="page-title">Track a claim</h1>
+
+  <form class="row" (ngSubmit)="search()">
+    <mat-form-field class="search">
+      <mat-label>Claim number</mat-label>
+      <input matInput name="number" placeholder="CLM-SG-2026-000001" [(ngModel)]="query" autocomplete="off" />
+    </mat-form-field>
+    <button mat-flat-button type="submit" [disabled]="loading()">Search</button>
+  </form>
+
+  @if (myClaims().length) {
+    <div class="row">
+      <span class="caption">Your claims:</span>
+      @for (c of myClaims(); track c.id) {
+        <button mat-stroked-button type="button" (click)="open(c.claimNumber)">{{ c.claimNumber }}</button>
+      }
+    </div>
+  }
+
+  @if (error(); as message) {
+    <app-alert severity="warning">{{ message }}</app-alert>
+  }
+
+  @if (claim(); as c) {
+    <mat-card appearance="outlined">
+      <div class="card-pad stack">
+        <div class="spread">
+          <div>
+            <h2 class="section-title">{{ c.claimNumber }}</h2>
+            <div class="caption">
+              {{ c.claimType }} · {{ c.market }} · policy {{ c.policyNumber }} · incident on {{ c.incidentDate }}
+            </div>
+          </div>
+          <app-status-chip [status]="c.status" />
+        </div>
+
+        <dl class="facts">
+          <dt>Claimed</dt>
+          <dd class="num">{{ money(c.claimedAmount, c.currency) }}</dd>
+          @for (d of c.incidentDetails | keyvalue; track d.key) {
+            <dt>{{ labelFor(d.key) }}</dt>
+            <dd>{{ d.value }}</dd>
+          }
+          <dt>Last update</dt>
+          <dd>{{ when(c.updatedAt) }}</dd>
+        </dl>
+
+        @if (c.status === 'INFO_REQUESTED') {
+          <div class="reply stack">
+            <app-alert severity="warning">The claims officer asked: {{ openQuestion(c) }}</app-alert>
+            @if (replyError(); as message) {
+              <app-alert severity="error">{{ message }}</app-alert>
+            }
+            <mat-form-field>
+              <mat-label>Your reply</mat-label>
+              <textarea matInput rows="3" name="reply" [(ngModel)]="reply" maxlength="2000"></textarea>
+            </mat-form-field>
+            <div>
+              <button mat-flat-button type="button" [disabled]="sending() || !reply.trim()" (click)="sendReply(c)">
+                {{ sending() ? 'Sending…' : 'Send reply' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <h3 class="section-title small">Activity</h3>
+        <app-claim-timeline [claim]="c" />
+      </div>
+    </mat-card>
+  }
+</div>

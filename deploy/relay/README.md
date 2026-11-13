@@ -185,9 +185,7 @@ const getRelayToken = () => fetch("/api/relay-token").then((r) => (r.ok ? r.text
 
 iroh-fetch calls the function before connecting and again whenever the relay refuses the client, so after a rotation
 clients pick up the new token by themselves (`relayTokenRefreshMs` or `iroh.refreshRelayToken()` fetch it earlier).
-Server-side Node clients can pass the `gw_...` token as a plain string. The Next.js example
-([`examples/nextjs`](../../examples/nextjs)) serves `IROH_RELAY_TOKEN` this way and falls back to the older, bundled
-`NEXT_PUBLIC_IROH_RELAY_TOKEN` when it's unset.
+Server-side Node clients can pass the `gw_...` token as a plain string.
 
 ```bash
 # iroh-proxy
