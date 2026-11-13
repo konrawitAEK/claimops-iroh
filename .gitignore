@@ -1,11 +1,5 @@
-/target
-node_modules
-.next
-*.key
+node_modules/
 .env*.local
-*.tsbuildinfo
-.venv/
-
-# local native addon builds (scripts/build-native.sh)
-packages/iroh-fetch/native/
+*.key
 .claude/
+.DS_Store

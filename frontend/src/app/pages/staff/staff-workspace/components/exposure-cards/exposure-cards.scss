@@ -1,0 +1,36 @@
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+.market {
+  font: var(--mat-sys-title-large);
+  font-weight: 700;
+}
+.usd {
+  border-color: var(--mat-sys-primary);
+}
+table.data-table.small {
+  margin-top: 8px;
+  th,
+  td {
+    padding: 4px 0;
+  }
+  th + th,
+  td + td {
+    padding-left: 12px;
+  }
+  th {
+    font: var(--mat-sys-label-medium);
+    color: var(--co-muted);
+  }
+}
+.total td {
+  font-weight: 600;
+}
+.settled {
+  color: var(--co-success);
+}
+.zero {
+  opacity: 0.5;
+}

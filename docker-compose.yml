@@ -1,0 +1,109 @@
+# ClaimOps over iroh: PostgreSQL 16, Kafka (KRaft, no ZooKeeper), the claims backend, an iroh-gateway in front of
+# it, and the Angular frontend.
+#   docker compose up --build
+# App: http://localhost:4200  ·  Postgres: localhost:5432  ·  Kafka: localhost:9092
+#
+# The backend publishes no port. The browser reaches it only over iroh: iroh-fetch -> relay -> gateway -> backend,
+# the same path it takes when the backend sits behind NAT on another machine. To call the API from the host
+# (curl, Swagger UI), use iroh-proxy; see README.md.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: claimops
+      POSTGRES_USER: claimops
+      POSTGRES_PASSWORD: claimops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claimops -d claimops"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.9.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # INTERNAL is for containers on this network; EXTERNAL lets a backend run from the IDE on the host.
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # The application declares its topic; disabling auto-create stops a typo from creating a stray topic.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  backend:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/claimops
+      DB_USER: claimops
+      DB_PASSWORD: claimops
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    # No published port: only the gateway (on this network) talks to the backend.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  # Makes the backend reachable over iroh without opening a port. Only outbound connections; prints
+  # IROH_ENDPOINT_ID=... on start (docker compose logs gateway). The key, and so the endpoint id, lives in the
+  # gateway-data volume; keep it secret.
+  gateway:
+    image: ghcr.io/irohkit/iroh-gateway:0.6.3
+    environment:
+      BACKEND_URL: http://backend:8080
+      # Only the REST API is reachable over iroh, not Swagger UI or actuator.
+      IROH_ALLOW_PATHS: /api
+      # Admin port, reachable only on this compose network (no published port); the frontend reads the
+      # endpoint id from its /status.
+      IROH_ADMIN_ADDR: 0.0.0.0:9090
+      IROH_ADMIN_ALLOW_PUBLIC: "true"
+      # Your own relay instead of n0's public relays (optional):
+      # IROH_RELAY_URL: https://relay.example.com
+      # IROH_RELAY_TOKEN: gw_...
+    volumes:
+      - gateway-data:/data
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      # Where to find the gateway's endpoint id. To serve the frontend elsewhere, set IROH_ENDPOINT_ID instead.
+      IROH_GATEWAY_STATUS_URL: http://gateway:9090/status
+      # IROH_ENDPOINT_ID: <the gateway's endpoint id>
+      # IROH_RELAY_URL: https://relay.example.com   (the relay the browser uses, if not n0's)
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+
+volumes:
+  postgres-data:
+  gateway-data:

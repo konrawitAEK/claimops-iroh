@@ -1,0 +1,22 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.amount {
+  display: flex;
+  gap: 8px;
+}
+.currency {
+  width: 110px;
+}
+.details {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  padding: 12px 16px 16px;
+  margin: 0;
+}
+legend {
+  font: var(--mat-sys-title-small);
+  padding: 0 6px;
+}

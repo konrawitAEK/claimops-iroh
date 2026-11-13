@@ -1,0 +1,7 @@
+mat-dialog-content {
+  min-width: min(420px, 80vw);
+  padding-top: 8px !important;
+}
+.danger {
+  background: var(--co-error);
+}
